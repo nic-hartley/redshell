@@ -17,28 +17,15 @@ jobs:
       fail-fast: false
       matrix:
         rust: [stable, "1.64", nightly]
-        platform: [windows, ubuntu]
-        run: [single, rayon]  # TODO: std_multi
-        sys: [nop, cli_crossterm, gui_softbuffer]
-        include:
-        - std: ""
-        - run: single
-          std: "std"
-        - run: rayon
-          std: "std"
-        - sys: nop
-          std: "std"
-        - sys: cli_crossterm
-          std: "std"
-        - sys: gui_softbuffer
-          std: "std"
-    name: Rust ${{ matrix.rust }} on ${{ matrix.platform }}, runner ${{ matrix.run }}, IO ${{ matrix.sys }}
-    runs-on: ${{ matrix.platform }}-latest
+        os: [windows, ubuntu]
+        plat: [ssh, steam]
+    name: Rust ${{ matrix.rust }} on ${{ matrix.os }} for platform ${{ matrix.plat }}
+    runs-on: ${{ matrix.os }}-latest
     steps:
     - uses: actions/cache@v3
       with:
         path: ~/.rustup/
-        key: rustup-${{ matrix.platform }}-${{ matrix.rust }}
+        key: rustup-${{ matrix.os }}-${{ matrix.rust }}
     - uses: actions/cache@v3
       with:
         path: ~/.cargo/registry
@@ -46,7 +33,7 @@ jobs:
     - uses: actions/cache@v3
       with:
         path: ./target
-        key: target-dir-${{ matrix.platform }}-${{ matrix.rust }}
+        key: target-dir-${{ matrix.os }}-${{ matrix.rust }}
     - name: Set up Rust
       run: |
         rustup default ${{ matrix.rust }}
@@ -55,48 +42,8 @@ jobs:
     - uses: actions/checkout@v3
     - name: Run tests
       env:
-        features: run_${{ matrix.run }},io_${{ matrix.sys }},${{ matrix.std }}
+        features: plat_${{ matrix.plat }}
       run: |
         cargo fmt --check
         cargo check --features "${{ env.features }}" --all-targets
         cargo test --features "${{ env.features }}" --all-targets
-
-
-  mass-events:
-    strategy:
-      fail-fast: false
-      matrix:
-        run: [orig, single, rayon]
-        include:
-        - std: ""
-        - run: orig
-          std: "std"
-        - run: single
-          std: "std"
-        - run: rayon
-          std: "std"
-    name: mass-messages on runner ${{ matrix.run }}
-    runs-on: ubuntu-latest
-    steps:
-    - uses: actions/cache@v3
-      with:
-        path: ~/.rustup/
-        key: rustup-ubuntu-stable
-    - uses: actions/cache@v3
-      with:
-        path: ~/.cargo/registry
-        key: cargo-cache
-    - uses: actions/cache@v3
-      with:
-        path: ./target
-        key: target-dir-ubuntu-stable
-    - name: Set up Rust
-      run: |
-        rustup default stable
-
-    - uses: actions/checkout@v3
-    - name: Run mass-messages
-      env:
-        features: run_${{ matrix.run }},io_nop,${{ matrix.std }}
-      run: |
-        cargo run --release --bin mass-messages --features "${{ env.features }}"
