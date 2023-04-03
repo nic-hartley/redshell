@@ -13,21 +13,19 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        platform: [ubuntu, windows]
-        # TODO: Replace with `plat_` eventually
-        sys: [cli_crossterm, gui_softbuffer]
+        os: [windows, ubuntu]
+        plat: [ssh, steam]
         include:
         - ext: ''
-        - platform: windows
+        - os: windows
           ext: '.exe'
-        - std: ""
-    name: Build desktop-bin-${{ matrix.sys }}-${{ matrix.platform }}
-    runs-on: ${{ matrix.platform }}-latest
+    name: Build desktop-bin-${{ matrix.plat }}-${{ matrix.os }}
+    runs-on: ${{ matrix.os }}-latest
     steps:
     - uses: actions/cache@v3
       with:
         path: ~/.rustup/
-        key: rustup-${{matrix.platform}}-stable
+        key: rustup-${{matrix.os}}-stable
     - uses: actions/cache@v3
       with:
         path: ~/.cargo/registry
@@ -35,7 +33,7 @@ jobs:
     - uses: actions/cache@v3
       with:
         path: ./target
-        key: target-dir-${{matrix.platform}}-stable
+        key: target-dir-${{matrix.os}}-stable
     - name: Set up Rust
       run: |
         rustup default stable
@@ -43,11 +41,11 @@ jobs:
     - uses: actions/checkout@v3
     - name: Generate artifact
       run: |
-        cargo build --release --features io_${{ matrix.sys }},run_rayon,std --bins
+        cargo build --release --features plat_{{ matrix.plat }}
 
     - uses: actions/upload-artifact@v3
       with:
-        name: desktop-bin-${{ matrix.sys }}-${{ matrix.platform }}
+        name: desktop-bin-${{ matrix.plat }}-${{ matrix.os }}
         path: |
           target/release/redshell${{ matrix.ext }}
         if-no-files-found: error
